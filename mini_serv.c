@@ -24,7 +24,7 @@ void signal_handler(int sig)
 }
 
 /**
- * @brief helper function to provide a clean exit in case of an error
+ * @brief helper function provide a clean exit in case of an error
  * (1) it returns an error msg
  * (2) it closes the fds of all connected clients
  * (3) it closes the socket fd of the server itself
