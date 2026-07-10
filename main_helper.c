@@ -14,6 +14,10 @@
 
 /*
  * PRE-GIVEN main
+ * that should serve as an example and should support students, 
+ * but students are not forced to use it. 
+ * Beware this file use forbidden functions or write things 
+ * that must not be there in your final program
  */
 int main() {
 	int sockfd, connfd, len;
