@@ -1,9 +1,9 @@
 /**
  * DESCRIPTION:
- * one-file (main) solution to meet the projects goals
- * only the pre-given helper functions are included by an external file
- * it can be used to solve the final exam at 42 (2026 version) by removing the debug commands 
- * and the corresponding header as well as the signal handling
+ * one-file solution to meet the projects goals
+ * only the pre-given helper functions are included by an external file to not have to copy them into this file
+ * this file can be used to solve the final exam at 42 (2026 version) by removing the debug commands 
+ * and the corresponding header as well as the signal handling and copy the functions of the file mini_serv_helpers.c
  */
 
 #include "debug.h"
@@ -13,11 +13,12 @@
 volatile sig_atomic_t g_signalnum = 0;
 
 #include "sys/select.h"
+
 fd_set	*fds_read;
 fd_set	*fds_write;
 int	max_fd = 0;
 int	last_id = 0;
-int	fds[MAX_CLIENTS];
+int	ids[MAX_CLIENTS];
 char	*outbuf[MAX_CLIENTS];
 
 
@@ -48,7 +49,7 @@ void ft_err_exit(int socket_fd)
 	write(2, err_msg, strlen(err_msg));
 	// Close fds
 	for (int i = 0; i <= max_fd; i++) {
-		if (fds[i])
+		if (ids[i])
 			close (i);
 	}
 
@@ -86,7 +87,7 @@ void	ft_register_new_client(int fd) {
 	FD_ISSET(fd, fds_read);
 	outbuf[fd] = NULL;
 	last_id += 1;
-	fds[fd] = last_id;
+	ids[fd] = last_id;
 }
 
 int main(int argc, char *argv[]) {
@@ -114,10 +115,10 @@ int main(int argc, char *argv[]) {
 
 	FD_ZERO(fds_read); //makro for select
 	FD_ZERO(fds_write); //makro for select
-	bzero(fds, sizeof(fds));
+	bzero(ids, sizeof(ids));
 	bzero(outbuf, sizeof(outbuf));
 
-	//part from pre-given main START
+	//adapted part from pre-given main START
 	int sockfd, connfd;
 	struct sockaddr_in servaddr, cli; 
 
@@ -148,7 +149,7 @@ int main(int argc, char *argv[]) {
 		DEBUG_PRINT("cannot listen\n"); 
 		ft_err_exit(sockfd);
 	}
-	//part from pre-given main END
+	//adapted part from pre-given main END
 	
 	FD_SET(sockfd, fds_read); //makro for select
 
