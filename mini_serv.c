@@ -12,7 +12,8 @@
 
 volatile sig_atomic_t g_signalnum = 0;
 
-#include "sys/select.h"
+#include <sys/select.h>
+#include <stdio.h>
 
 fd_set	*fds_read;
 fd_set	*fds_write;
@@ -61,25 +62,33 @@ void ft_err_exit(int socket_fd)
 	exit(1);
 }
 
-void	ft_remove_client(int fd) {
+void	ft_remove_client(int sockfd, int fd) {
 	FD_CLR(fd, fds_read);
 	close(fd);
 	if (outbuf[fd]) {
 		free(outbuf[fd]);
 		outbuf[fd] = NULL;
 	}
+	for (int i = 0; i < max_fd; i++) {
+		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
+			char	*welcome;
+			sprintf(welcome, "server: client %d just left\n", ids[fd]);
+			send(i, welcome, 102, 0); // TODO: error check missing
+		}
+	}
 }
 
 /**
- * @brief function to send a message to all clients
+ * @brief function to send a message from one client to all clients
+ * incomplete message parts (that do not end with a new line are stored in the outbuf arrary)
  * socket fd and sender are excluded
  */
 void ft_send_msg(int sockfd, int fd) {
 	for (int i = 0; i < max_fd; i++) {
-		if (FD_ISSET(i, fds_read)) {
+		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
 			char	*to_print;
-			while(extract_message(&outbuf[i], &to_print)) {
-				send(i, to_print, 1024, 0);
+			while(extract_message(&outbuf[i], &to_print)) { // TODO: error check missing
+				send(i, to_print, 1024, 0); // TODO: error check missing
 				free(to_print);
 			}
 		}
@@ -91,11 +100,18 @@ void ft_send_msg(int sockfd, int fd) {
  * the fd gets add to the select makro
  * the id gets added to the fds aray
  */
-void	ft_register_new_client(int fd) {
+void	ft_register_new_client(int sockfd, int fd) {
 	FD_ISSET(fd, fds_read);
 	outbuf[fd] = NULL;
 	last_id += 1;
 	ids[fd] = last_id;
+	for (int i = 0; i < max_fd; i++) {
+		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
+			char	*welcome;
+			sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
+			send(i, welcome, 102, 0); // TODO: error check missing
+		}
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -170,17 +186,17 @@ int main(int argc, char *argv[]) {
 		for (int i = 0; i <= max_fd; i++) {
 			if (FD_ISSET(i, fds_loop)) {
 				if (i == sockfd) //CASE NEW CLIENT
-					ft_register_new_client(i);
+					ft_register_new_client(sockfd, i);
 				else {
 					char	recv_buf[1024];
 					int	bytes_received = recv(i, recv_buf, sizeof(recv_buf), 0);
 					if (bytes_received <= 0) { //CASE CLIENT LOST
-						ft_remove_client(i);
+						ft_remove_client(sockfd, i);
 						break;
 					}
 					else { //CASE NEW MESSAGE FROM CLIENT
 					       	recv_buf[bytes_received] = '\0';
-						outbuf[i] = str_join(outbuf[i], recv_buf);
+						outbuf[i] = str_join(outbuf[i], recv_buf); // TODO: error check missing
 						ft_send_msg(sockfd, i);
 						bzero(recv_buf, sizeof(recv_buf));
 					}
