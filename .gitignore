@@ -56,6 +56,8 @@ dkms.conf
 # debug information files
 *.dwo
 
-#vim swap  and vscode files
+#vim swap and tag files and vscode files
 *.sw?
 *.vscode
+tags
+
