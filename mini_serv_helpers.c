@@ -28,8 +28,7 @@
  * @param msg pointer to a char pointer where the extracted message will be stored. The caller is responsible for freeing this memory after use.
  * @return 1 if a complete message was successfully extracted, 0 if no complete message was found (i.e., no '\n' in the
  */
-int extract_message(char **buf, char **msg)
-{
+int extract_message(char **buf, char **msg) {
 	char *newbuf;
 	int i;
 

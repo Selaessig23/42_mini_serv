@@ -7,14 +7,22 @@
  */
 
 #include "debug.h"
-#include "mini_serv_helpers.c"
-#define MAX_CLIENTS 65536
-
-volatile sig_atomic_t g_signalnum = 0;
-
 #include <sys/select.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
+#define MAX_CLIENTS 65536
+
+//from mini_serv_helpers.c
+int extract_message(char **buf, char **msg);
+char *str_join(char *buf, char *add);
+
+// global variables
 fd_set	*fds_read;
 fd_set	*fds_write;
 int	max_fd = 0;
@@ -22,6 +30,9 @@ int	last_id = 0;
 int	ids[MAX_CLIENTS];
 char	*outbuf[MAX_CLIENTS];
 
+
+// optional global variable to exit clean
+volatile sig_atomic_t g_signalnum = 0;
 
 /**
  * @brief signal handler function that sets the global variable g_signalnum to the received signal number
@@ -53,10 +64,6 @@ void ft_err_exit(int socket_fd)
 		if (ids[i])
 			close (i);
 	}
-
-
-	//if (fds)
-	//	ft_close_poll_fds(fds, MAX_CLIENTS + 1);
 	if (socket_fd >= 0)
 		close(socket_fd);
 	exit(1);
@@ -71,9 +78,9 @@ void	ft_remove_client(int sockfd, int fd) {
 	}
 	for (int i = 0; i < max_fd; i++) {
 		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
-			char	*welcome;
-			sprintf(welcome, "server: client %d just left\n", ids[fd]);
-			send(i, welcome, 102, 0); // TODO: error check missing
+			char	*byebye = NULL;
+			sprintf(byebye, "server: client %d just left\n", ids[fd]);
+			send(i, byebye, 102, 0); // TODO: error check missing
 		}
 	}
 }
@@ -107,7 +114,7 @@ void	ft_register_new_client(int sockfd, int fd) {
 	ids[fd] = last_id;
 	for (int i = 0; i < max_fd; i++) {
 		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
-			char	*welcome;
+			char	*welcome = NULL;
 			sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
 			send(i, welcome, 102, 0); // TODO: error check missing
 		}
@@ -179,14 +186,24 @@ int main(int argc, char *argv[]) {
 
 	fd_set	*fds_loop;
 
-	while (1) {
+	while (g_signalnum == 0) {
 		fds_loop = fds_read;
 		if (select(max_fd, fds_loop, fds_write, NULL, NULL) < 0)
 			ft_err_exit(sockfd);
 		for (int i = 0; i <= max_fd; i++) {
 			if (FD_ISSET(i, fds_loop)) {
-				if (i == sockfd) //CASE NEW CLIENT
-					ft_register_new_client(sockfd, i);
+				if (i == sockfd) { //CASE NEW CLIENT
+					socklen_t	len;
+					len = sizeof(cli);
+					connfd = accept(sockfd, (struct sockaddr *)&cli, &len);
+					if (connfd < 0) { 
+						DEBUG_PRINT("server acccept failed...\n"); 
+						ft_err_exit(sockfd);
+					} 
+					else
+						DEBUG_PRINT("server acccept the client...\n");
+					ft_register_new_client(sockfd, connfd);
+				}
 				else {
 					char	recv_buf[1024];
 					int	bytes_received = recv(i, recv_buf, sizeof(recv_buf), 0);
@@ -203,19 +220,6 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
-					
-
-
-
-
-	socklen_t	len;
-	len = sizeof(cli);
-	connfd = accept(sockfd, (struct sockaddr *)&cli, &len);
-	if (connfd < 0) { 
-        	DEBUG_PRINT("server acccept failed...\n"); 
-		ft_err_exit(sockfd);
-    	} 
-	else
-        	DEBUG_PRINT("server acccept the client...\n");
 	}
+	ft_err_exit(sockfd);
 }
