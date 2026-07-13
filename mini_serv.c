@@ -75,7 +75,15 @@ void	ft_remove_client(int fd) {
  * socket fd and sender are excluded
  */
 void ft_send_msg(int sockfd, int fd) {
-
+	for (int i = 0; i < max_fd; i++) {
+		if (FD_ISSET(i, fds_read)) {
+			char	*to_print;
+			while(extract_message(&outbuf[i], &to_print)) {
+				send(i, to_print, 1024, 0);
+				free(to_print);
+			}
+		}
+	}
 }
 
 /**
@@ -164,18 +172,21 @@ int main(int argc, char *argv[]) {
 				if (i == sockfd) //CASE NEW CLIENT
 					ft_register_new_client(i);
 				else {
-					int	bytes_received = recv(i, outbuf[i], sizeof(outbuf[i]), 0);
+					char	recv_buf[1024];
+					int	bytes_received = recv(i, recv_buf, sizeof(recv_buf), 0);
 					if (bytes_received <= 0) { //CASE CLIENT LOST
 						ft_remove_client(i);
 						break;
 					}
-					else {//CASE NEW MESSAGE FROM CLIENT
-						outbuf[i][bytes_received] = '\0';
+					else { //CASE NEW MESSAGE FROM CLIENT
+					       	recv_buf[bytes_received] = '\0';
+						outbuf[i] = str_join(outbuf[i], recv_buf);
 						ft_send_msg(sockfd, i);
+						bzero(recv_buf, sizeof(recv_buf));
+					}
 				}
 			}
 		}
-	}
 					
 
 
