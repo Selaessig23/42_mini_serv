@@ -57,6 +57,10 @@ int extract_message(char **buf, char **msg)
 
 /*
  * PRE-GIVEN function
+ * @brief it adds another string (add) to an existing one (buf) or copies 
+ * the other string to a new string with heap allocation and returns this new string
+ *
+ * free (NULL) is valid, it just does nothing
  *
  */
 char *str_join(char *buf, char *add) {
