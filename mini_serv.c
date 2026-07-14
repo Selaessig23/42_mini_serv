@@ -83,6 +83,7 @@ void	ft_remove_client(int sockfd, int fd) {
 			send(i, byebye, 102, 0); // TODO: error check missing
 		}
 	}
+	DEBUG_PRINT("Client %d has left the server.\n", fd);
 }
 
 /**
@@ -100,6 +101,7 @@ void ft_send_msg(int sockfd, int fd) {
 			}
 		}
 	}
+	DEBUG_PRINT("New message from client received\n");
 }
 
 /**
@@ -112,6 +114,8 @@ void	ft_register_new_client(int sockfd, int fd) {
 	outbuf[fd] = NULL;
 	last_id += 1;
 	ids[fd] = last_id;
+	if (fd > max_fd)
+		max_fd = fd;
 	for (int i = 0; i < max_fd; i++) {
 		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*welcome = NULL;
@@ -119,6 +123,7 @@ void	ft_register_new_client(int sockfd, int fd) {
 			send(i, welcome, 102, 0); // TODO: error check missing
 		}
 	}
+	DEBUG_PRINT("New client registered with id %d\n", last_id);
 }
 
 int main(int argc, char *argv[]) {
@@ -184,13 +189,14 @@ int main(int argc, char *argv[]) {
 	//adapted part from pre-given main END
 	
 	FD_SET(sockfd, &fds_read); //makro for select
+	max_fd = sockfd;
 
 	fd_set	fds_loop;
 
 	while (g_signalnum == 0) {
 		DEBUG_PRINT("Start main server loop\n");
 		fds_loop = fds_read;
-		if (select(max_fd, &fds_loop, &fds_write, NULL, NULL) < 0) {
+		if (select(max_fd + 1, &fds_loop, &fds_write, NULL, NULL) < 0) {
 			DEBUG_PRINT("server select failed...\n");
 			ft_err_exit(sockfd);
 		}
