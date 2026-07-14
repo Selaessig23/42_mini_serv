@@ -69,6 +69,15 @@ void ft_err_exit(int socket_fd)
 	exit(1);
 }
 
+void ft_send_msg(int sockfd, int fd, char *msg) { 
+	for (int i = 0; i <= max_fd; i++) {
+		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
+			send(i, msg, strlen(msg), 0); // TODO: error check missing
+		}
+	}
+
+}
+
 void	ft_remove_client(int sockfd, int fd) {
 	FD_CLR(fd, &fds_read);
 	close(fd);
@@ -76,13 +85,9 @@ void	ft_remove_client(int sockfd, int fd) {
 		free(outbuf[fd]);
 		outbuf[fd] = NULL;
 	}
-	for (int i = 0; i <= max_fd; i++) {
-		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
-			char	*byebye = NULL;
-			sprintf(byebye, "server: client %d just left\n", ids[fd]);
-			send(i, byebye, 102, 0); // TODO: error check missing
-		}
-	}
+	char	*byebye = NULL;
+	sprintf(byebye, "server: client %d just left\n", ids[fd]);
+	ft_send_msg(sockfd, fd, byebye);
 	DEBUG_PRINT("Client %d has left the server.\n", fd);
 }
 
@@ -91,15 +96,11 @@ void	ft_remove_client(int sockfd, int fd) {
  * incomplete message parts (that do not end with a new line are stored in the outbuf arrary)
  * socket fd and sender are excluded
  */
-void ft_send_msg(int sockfd, int fd) {
-	for (int i = 0; i <= max_fd; i++) {
-		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
-			char	*to_print;
-			while(extract_message(&outbuf[i], &to_print)) { // TODO: error check missing
-				send(i, to_print, 1024, 0); // TODO: error check missing
-				free(to_print);
-			}
-		}
+void ft_transmit_msg(int sockfd, int fd) {
+	char	*to_print;
+	while(extract_message(&outbuf[fd], &to_print)) { // TODO: error check missing
+		ft_send_msg(sockfd, fd, to_print);
+		free(to_print);
 	}
 	DEBUG_PRINT("New message from client received\n");
 }
@@ -116,13 +117,9 @@ void	ft_register_new_client(int sockfd, int fd) {
 	ids[fd] = last_id;
 	if (fd > max_fd)
 		max_fd = fd;
-	for (int i = 0; i <= max_fd; i++) {
-		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
-			char	*welcome = NULL;
-			sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
-			send(i, welcome, 102, 0); // TODO: error check missing
-		}
-	}
+	char	*welcome = NULL;
+	sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
+	ft_send_msg(sockfd, fd, welcome);
 	DEBUG_PRINT("New client registered with id %d\n", last_id);
 }
 
@@ -226,7 +223,7 @@ int main(int argc, char *argv[]) {
 					else { //CASE NEW MESSAGE FROM CLIENT
 					       	recv_buf[bytes_received] = '\0';
 						outbuf[i] = str_join(outbuf[i], recv_buf); // TODO: error check missing
-						ft_send_msg(sockfd, i);
+						ft_transmit_msg(sockfd, i);
 						bzero(recv_buf, sizeof(recv_buf));
 					}
 				}
