@@ -85,7 +85,7 @@ void	ft_remove_client(int sockfd, int fd) {
 		free(outbuf[fd]);
 		outbuf[fd] = NULL;
 	}
-	char	*byebye = NULL;
+	char	byebye[1024];
 	sprintf(byebye, "server: client %d just left\n", ids[fd]);
 	ft_send_msg(sockfd, fd, byebye);
 	DEBUG_PRINT("Client %d has left the server.\n", fd);
@@ -117,7 +117,7 @@ void	ft_register_new_client(int sockfd, int fd) {
 	ids[fd] = last_id;
 	if (fd > max_fd)
 		max_fd = fd;
-	char	*welcome = NULL;
+	char	welcome[1024];
 	sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
 	ft_send_msg(sockfd, fd, welcome);
 	DEBUG_PRINT("New client registered with id %d\n", last_id);
