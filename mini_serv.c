@@ -188,9 +188,13 @@ int main(int argc, char *argv[]) {
 	fd_set	fds_loop;
 
 	while (g_signalnum == 0) {
+		DEBUG_PRINT("Start main server loop\n");
 		fds_loop = fds_read;
-		if (select(max_fd, &fds_loop, &fds_write, NULL, NULL) < 0)
+		if (select(max_fd, &fds_loop, &fds_write, NULL, NULL) < 0) {
+			DEBUG_PRINT("server select failed...\n");
 			ft_err_exit(sockfd);
+		}
+		DEBUG_PRINT("Event on READ detected by select fct\n");
 		for (int i = 0; i <= max_fd; i++) {
 			if (FD_ISSET(i, &fds_loop)) {
 				if (i == sockfd) { //CASE NEW CLIENT
