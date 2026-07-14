@@ -76,7 +76,7 @@ void	ft_remove_client(int sockfd, int fd) {
 		free(outbuf[fd]);
 		outbuf[fd] = NULL;
 	}
-	for (int i = 0; i < max_fd; i++) {
+	for (int i = 0; i <= max_fd; i++) {
 		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*byebye = NULL;
 			sprintf(byebye, "server: client %d just left\n", ids[fd]);
@@ -92,7 +92,7 @@ void	ft_remove_client(int sockfd, int fd) {
  * socket fd and sender are excluded
  */
 void ft_send_msg(int sockfd, int fd) {
-	for (int i = 0; i < max_fd; i++) {
+	for (int i = 0; i <= max_fd; i++) {
 		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*to_print;
 			while(extract_message(&outbuf[i], &to_print)) { // TODO: error check missing
@@ -116,7 +116,7 @@ void	ft_register_new_client(int sockfd, int fd) {
 	ids[fd] = last_id;
 	if (fd > max_fd)
 		max_fd = fd;
-	for (int i = 0; i < max_fd; i++) {
+	for (int i = 0; i <= max_fd; i++) {
 		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*welcome = NULL;
 			sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
@@ -214,6 +214,7 @@ int main(int argc, char *argv[]) {
 					else
 						DEBUG_PRINT("server acccept the client...\n");
 					ft_register_new_client(sockfd, connfd);
+					break;
 				}
 				else {
 					char	recv_buf[1024];
