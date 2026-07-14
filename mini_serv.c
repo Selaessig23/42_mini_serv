@@ -23,8 +23,8 @@ int extract_message(char **buf, char **msg);
 char *str_join(char *buf, char *add);
 
 // global variables
-fd_set	*fds_read;
-fd_set	*fds_write;
+fd_set	fds_read;
+fd_set	fds_write;
 int	max_fd = 0;
 int	last_id = 0;
 int	ids[MAX_CLIENTS];
@@ -70,14 +70,14 @@ void ft_err_exit(int socket_fd)
 }
 
 void	ft_remove_client(int sockfd, int fd) {
-	FD_CLR(fd, fds_read);
+	FD_CLR(fd, &fds_read);
 	close(fd);
 	if (outbuf[fd]) {
 		free(outbuf[fd]);
 		outbuf[fd] = NULL;
 	}
 	for (int i = 0; i < max_fd; i++) {
-		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
+		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*byebye = NULL;
 			sprintf(byebye, "server: client %d just left\n", ids[fd]);
 			send(i, byebye, 102, 0); // TODO: error check missing
@@ -92,7 +92,7 @@ void	ft_remove_client(int sockfd, int fd) {
  */
 void ft_send_msg(int sockfd, int fd) {
 	for (int i = 0; i < max_fd; i++) {
-		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
+		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*to_print;
 			while(extract_message(&outbuf[i], &to_print)) { // TODO: error check missing
 				send(i, to_print, 1024, 0); // TODO: error check missing
@@ -108,12 +108,12 @@ void ft_send_msg(int sockfd, int fd) {
  * the id gets added to the fds aray
  */
 void	ft_register_new_client(int sockfd, int fd) {
-	FD_ISSET(fd, fds_read);
+	FD_ISSET(fd, &fds_read);
 	outbuf[fd] = NULL;
 	last_id += 1;
 	ids[fd] = last_id;
 	for (int i = 0; i < max_fd; i++) {
-		if (FD_ISSET(i, fds_read) && i != sockfd && i != fd) {
+		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
 			char	*welcome = NULL;
 			sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
 			send(i, welcome, 102, 0); // TODO: error check missing
@@ -144,8 +144,9 @@ int main(int argc, char *argv[]) {
 	signal(SIGQUIT, signal_handler);
 	signal(SIGPIPE, SIG_IGN);
 
-	FD_ZERO(fds_read); //makro for select
-	FD_ZERO(fds_write); //makro for select
+	bzero(ids, sizeof(ids));
+	FD_ZERO(&fds_read); //makro for select
+	FD_ZERO(&fds_write); //makro for select
 	bzero(ids, sizeof(ids));
 	bzero(outbuf, sizeof(outbuf));
 
@@ -182,16 +183,16 @@ int main(int argc, char *argv[]) {
 	}
 	//adapted part from pre-given main END
 	
-	FD_SET(sockfd, fds_read); //makro for select
+	FD_SET(sockfd, &fds_read); //makro for select
 
-	fd_set	*fds_loop;
+	fd_set	fds_loop;
 
 	while (g_signalnum == 0) {
 		fds_loop = fds_read;
-		if (select(max_fd, fds_loop, fds_write, NULL, NULL) < 0)
+		if (select(max_fd, &fds_loop, &fds_write, NULL, NULL) < 0)
 			ft_err_exit(sockfd);
 		for (int i = 0; i <= max_fd; i++) {
-			if (FD_ISSET(i, fds_loop)) {
+			if (FD_ISSET(i, &fds_loop)) {
 				if (i == sockfd) { //CASE NEW CLIENT
 					socklen_t	len;
 					len = sizeof(cli);
