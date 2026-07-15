@@ -25,6 +25,7 @@ char *str_join(char *buf, char *add);
 // global variables
 fd_set	fds_read;
 fd_set	fds_write;
+fd_set	fds_active;
 int	max_fd = 0;
 int	last_id = 0;
 int	ids[MAX_CLIENTS];
@@ -70,8 +71,9 @@ void ft_err_exit(int socket_fd)
 }
 
 void ft_send_msg(int sockfd, int fd, char *msg) { 
+	DEBUG_PRINT("test send fct\n");
 	for (int i = 0; i <= max_fd; i++) {
-		if (FD_ISSET(i, &fds_read) && i != sockfd && i != fd) {
+		if (FD_ISSET(i, &fds_write) && i != sockfd && i != fd) {
 			send(i, msg, strlen(msg), 0); // TODO: error check missing
 		}
 	}
@@ -80,6 +82,7 @@ void ft_send_msg(int sockfd, int fd, char *msg) {
 
 void	ft_remove_client(int sockfd, int fd) {
 	FD_CLR(fd, &fds_read);
+	FD_CLR(fd, &fds_active);
 	close(fd);
 	if (outbuf[fd]) {
 		free(outbuf[fd]);
@@ -88,6 +91,7 @@ void	ft_remove_client(int sockfd, int fd) {
 	char	byebye[1024];
 	sprintf(byebye, "server: client %d just left\n", ids[fd]);
 	ft_send_msg(sockfd, fd, byebye);
+	ids[fd] = 0;
 	DEBUG_PRINT("Client %d has left the server.\n", fd);
 }
 
@@ -111,7 +115,7 @@ void ft_transmit_msg(int sockfd, int fd) {
  * the id gets added to the fds aray
  */
 void	ft_register_new_client(int sockfd, int fd) {
-	FD_ISSET(fd, &fds_read);
+	FD_SET(fd, &fds_active);
 	outbuf[fd] = NULL;
 	last_id += 1;
 	ids[fd] = last_id;
@@ -120,7 +124,7 @@ void	ft_register_new_client(int sockfd, int fd) {
 	char	welcome[1024];
 	sprintf(welcome, "server: client %d just arrived\n", ids[fd]);
 	ft_send_msg(sockfd, fd, welcome);
-	DEBUG_PRINT("New client registered with id %d\n", last_id);
+	DEBUG_PRINT("New client registered with id %d\n, msg: %s", last_id, welcome);
 }
 
 int main(int argc, char *argv[]) {
@@ -146,9 +150,9 @@ int main(int argc, char *argv[]) {
 	signal(SIGQUIT, signal_handler);
 	signal(SIGPIPE, SIG_IGN);
 
-	bzero(ids, sizeof(ids));
 	FD_ZERO(&fds_read); //makro for select
 	FD_ZERO(&fds_write); //makro for select
+	FD_ZERO(&fds_active); //makro for select
 	bzero(ids, sizeof(ids));
 	bzero(outbuf, sizeof(outbuf));
 
@@ -185,21 +189,20 @@ int main(int argc, char *argv[]) {
 	}
 	//adapted part from pre-given main END
 	
-	FD_SET(sockfd, &fds_read); //makro for select
+	FD_SET(sockfd, &fds_active); //makro for select
 	max_fd = sockfd;
-
-	fd_set	fds_loop;
 
 	while (g_signalnum == 0) {
 		DEBUG_PRINT("Start main server loop\n");
-		fds_loop = fds_read;
-		if (select(max_fd + 1, &fds_loop, &fds_write, NULL, NULL) < 0) {
+		fds_read = fds_active;
+		fds_write = fds_active;
+		if (select(max_fd + 1, &fds_read, &fds_write, NULL, NULL) < 0) {
 			DEBUG_PRINT("server select failed...\n");
 			ft_err_exit(sockfd);
 		}
 		DEBUG_PRINT("Event on READ detected by select fct\n");
 		for (int i = 0; i <= max_fd; i++) {
-			if (FD_ISSET(i, &fds_loop)) {
+			if (FD_ISSET(i, &fds_read)) {
 				if (i == sockfd) { //CASE NEW CLIENT
 					socklen_t	len;
 					len = sizeof(cli);
@@ -215,7 +218,7 @@ int main(int argc, char *argv[]) {
 				}
 				else {
 					char	recv_buf[1024];
-					int	bytes_received = recv(i, recv_buf, sizeof(recv_buf), 0);
+					int	bytes_received = recv(i, recv_buf, sizeof(recv_buf) - 1, 0);
 					if (bytes_received <= 0) { //CASE CLIENT LOST
 						ft_remove_client(sockfd, i);
 						break;
