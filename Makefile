@@ -2,17 +2,9 @@
 NAME = mini_serv
 CC = cc
 CFLAGS = -Wall -Werror -Wextra 
-VALGRIND = valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --track-fds=yes
 
-#arguments to test:
+#arguments for the run target:
 ARGS = "8080"
-
-#styling
-RESET =			\033[0m
-BOLD =			\033[1m
-GREEN =			\033[32m
-YELLOW =		\033[33m
-RED :=			\033[91m
 
 #sources
 SRCS = mini_serv.c \
@@ -45,15 +37,4 @@ run: fclean all
 	@echo
 	@PATH=".$${PATH:+:$${PATH}}" && $(NAME) $(ARGS)
 
-debug: CFLAGS += -DDEBUG -g
-debug: fclean all
-	@echo "$(BOLD)$(YELLOW)Debug build complete.$(RESET)"
-
-debugrun: debug
-	@echo
-	@PATH=".$${PATH:+:$${PATH}}" && $(VALGRIND) $(NAME) $(ARGS)
-
-test: debug
-	VALGRIND_CMD='$(VALGRIND)' python3 test_mini_webserv.py --binary ./$(NAME) --port 19090 --clients 10 --valgrind
-
-.PHONY: all run debug debugrun test clean fclean re
+.PHONY: all run clean fclean re
