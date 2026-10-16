@@ -25,11 +25,23 @@ make clean    # remove object files
 make fclean   # remove object files and the executable
 make re       # clean and rebuild
 make run      # rebuild and start on port 8080
+make debug    # rebuild with debug symbols and DEBUG messages enabled
+make debugrun # build a debug version and start it on port 8080
 ```
 
 The Makefile is intentionally kept simple because it was written with the
 limited time available during the exam. It contains only the basic build,
-run, and cleanup targets; debug and test targets are not included.
+run, cleanup, and debug targets. There is no automated test target.
+
+The debug targets are useful during development:
+
+- `make debug` adds `-DDEBUG -g` to the compiler flags. This enables the
+  optional debug messages and includes debugging symbols in the executable.
+- `make debugrun` performs a debug build and starts the server with the
+  default `8080` port.
+
+The debug messages are not required for normal use. Build the regular
+executable with `make` when they are not needed.
 
 ## Build without Make
 

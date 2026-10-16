@@ -37,4 +37,12 @@ run: fclean all
 	@echo
 	@PATH=".$${PATH:+:$${PATH}}" && $(NAME) $(ARGS)
 
+debug: CFLAGS += -DDEBUG -g
+debug: fclean all
+	@echo "$(BOLD)$(YELLOW)Debug build complete.$(RESET)"
+
+debugrun: debug
+	@echo
+	@PATH=".$${PATH:+:$${PATH}}" && $(VALGRIND) $(NAME) $(ARGS)
+
 .PHONY: all run clean fclean re
