@@ -2,6 +2,7 @@
  * DESCRIPTION:
  * this main was pre-given by the subject
  * students are not forced to use it
+ * this file was not used in the final solution of the project
  */
 
 #include <string.h>
@@ -16,7 +17,7 @@
  * PRE-GIVEN main
  * that should serve as an example and should support students, 
  * but students are not forced to use it. 
- * Beware this file use forbidden functions or write things 
+ * Beware: this file uses forbidden functions and writes things 
  * that must not be there in your final program
  */
 int main() {
