@@ -1,6 +1,4 @@
 # 42_mini_serv
- # mini_serv
-
 `mini_serv` is a small TCP chat server. It listens on `127.0.0.1` and
 broadcasts each complete line received from one client to all other connected
 clients.
