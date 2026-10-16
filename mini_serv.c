@@ -2,8 +2,11 @@
  * DESCRIPTION:
  * one-file solution to meet the projects goals
  * only the pre-given helper functions are included by an external file to not have to copy them into this file
- * this file can be used to solve the final exam at 42 (2026 version) by removing the debug commands
- * and the corresponding header as well as the signal handling and copy the functions of the file mini_serv_helpers.c
+ * this file can be used to solve the final exam at 42 (2026 version) by 
+ * --> removing the debug commands
+ * --> removing the corresponding debug.h-header (include)
+ * --> removing the signal_handler-function and corresponding signal-handling commands in main
+ * --> copying the functions of the file mini_serv_helpers.c into this file to meet the one-file-solution requirement
  */
 
 #include "debug.h"
