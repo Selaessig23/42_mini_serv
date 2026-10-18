@@ -87,6 +87,8 @@ void ft_send_msg(int sockfd, int fd, char *msg)
 
 void ft_remove_client(int sockfd, int fd)
 {
+	int client_id = ids[fd];
+	
 	FD_CLR(fd, &fds_read);
 	FD_CLR(fd, &fds_active);
 	close(fd);
@@ -97,9 +99,9 @@ void ft_remove_client(int sockfd, int fd)
 		outbuf[fd] = NULL;
 	}
 	char byebye[1024];
-	sprintf(byebye, "server: client %d just left\n", ids[fd]);
+	sprintf(byebye, "server: client %d just left\n", client_id);
 	ft_send_msg(sockfd, fd, byebye);
-	DEBUG_PRINT("Client %d has left the server.\n", fd);
+	DEBUG_PRINT("Client with ID %d and fd %d has left the server.\n", client_id, fd);
 }
 
 /**
