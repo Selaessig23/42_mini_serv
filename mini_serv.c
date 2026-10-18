@@ -255,6 +255,12 @@ int main(int argc, char *argv[])
 						DEBUG_PRINT("server acccept failed...\n");
 						ft_err_exit(sockfd);
 					}
+					else if (connfd > MAX_CLIENTS || connfd > max_fd)
+					{
+						DEBUG_PRINT("server acccept failed: too many clients...\n");
+						close(connfd);
+						continue;
+					}
 					else
 						DEBUG_PRINT("server acccept the client...\n");
 					ft_register_new_client(sockfd, connfd);
