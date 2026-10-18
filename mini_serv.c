@@ -18,6 +18,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <errno.h> // opotional: for EINTR check in select if using signals to exit clean
 
 #define MAX_CLIENTS 65536
 
@@ -222,6 +223,22 @@ int main(int argc, char *argv[])
 		// fds_write = fds_active;
 		if (select(max_fd + 1, &fds_read, &fds_write, NULL, NULL) < 0)
 		{
+			// optional: check for EINTR to handle signal interruptions
+			// remove to pass 42 exam
+			if (errno == EINTR && g_signalnum != 0)
+			{
+				DEBUG_PRINT("select interrupted by signal\n");
+				for (int i = 0; i <= max_fd; i++)
+				{
+					if (ids[i])
+					{
+						close(i);
+						free(outbuf[i]);
+					}
+				}
+				close(sockfd);
+				return (0);
+			}
 			DEBUG_PRINT("server select failed...\n");
 			ft_err_exit(sockfd);
 		}
