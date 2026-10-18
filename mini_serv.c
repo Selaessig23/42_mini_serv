@@ -48,8 +48,6 @@ volatile sig_atomic_t g_signalnum = 0;
  */
 void signal_handler(int sig)
 {
-	(void)sig;
-	DEBUG_PRINT("Debug: signal handler called\n");
 	g_signalnum = sig;
 }
 
