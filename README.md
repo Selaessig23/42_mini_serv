@@ -1,5 +1,5 @@
 # 42_mini_serv
-`mini_serv` is a small TCP chat server. It listens on `127.0.0.1` and
+`mini_serv` is a minimalistic TCP chat server. It listens on `127.0.0.1` and
 broadcasts each complete line received from one client to all other connected
 clients.
 
@@ -10,20 +10,30 @@ final exam (2026), rather than to build a comprehensive IRC server. The
 important learning goals were to repeat the basics of sockets, clients, and
 message handling, and especially to understand how the `select()` function can
 monitor several file descriptors in one server loop.
-
 The implementation therefore focuses on the exam-style requirements and keeps
 the surrounding infrastructure deliberately small.
 
+## What this project focuses on
+
+The central subject of this repository is the smallest useful event-driven
+server loop:
+
+- create, bind, and listen on a TCP socket;
+- accept clients and assign them an identifier;
+- monitor the listening socket and clients with `select()`;
+- accumulate TCP fragments until a newline-terminated message is complete;
+- broadcast each complete line to the other connected clients; and
+- close sockets and release buffers when clients leave or the server stops.
+
+`42_mini_serv` is an exam-oriented exercise in understanding the descriptor loop and stream buffering with as little surrounding machinery as possible.
+
 ## File structure
 
-- `mini_serv.c` is the main program. It creates and binds the listening
-  socket, tracks connected clients, calls `select()`, receives data, and
+- `mini_serv.c` is the main program with the main server loop. It creates and binds the listening socket, tracks connected clients, calls `select()`, receives data, and
   broadcasts complete messages.
 - `mini_serv_helpers.c` contains the two string-buffer helpers used by the
   server. They handle joining received fragments and extracting complete
-  newline-terminated messages. These functions were provided by the subject
-  or are based on the provided functions, so they are kept separate from the
-  main server loop.
+  newline-terminated messages. These functions were provided by the subject, for that reason they are kept separate from the main server loop.
 - `debug.h` contains the optional signal-handling declaration and the
   `DEBUG_PRINT` macro used by the debug Make targets.
 - `main_helper.c` is a separate example of the pre-given socket setup. It is
@@ -31,7 +41,7 @@ the surrounding infrastructure deliberately small.
 
 This split keeps the exam-oriented server logic easy to read while isolating
 the provided helper functions and optional development code. The Makefile
-only compiles `mini_serv.c` and `mini_serv_helpers.c`.
+only compiles `mini_serv.c` and `mini_serv_helpers.c`. Normally, the main file mini_serv.c would have been devided into several logical inherent files, but the exam subject requires to just upload one single file. 
 
 ## Requirements
 
@@ -116,27 +126,48 @@ without elevated privileges.
 ## Limitations
 
 This is a learning and exam-preparation project, not a production-ready
-network service. Known limitations include:
+network service. The following limits are intentional consequences of its
+small scope:
 
 - It only listens on the IPv4 loopback address (`127.0.0.1`), so it is not
   intended for remote connections.
-- It has no authentication, encryption, access control, persistence, or
-  message history.
-- It implements a small line-based broadcast protocol, not the full IRC
-  protocol and its commands, channels, or user management.
-- The server has no configurable client limit or resource-management policy
-  beyond the fixed file-descriptor tracking array.
-- `send()` errors and several network edge cases are not handled
-  comprehensively.
+- It has no authentication, encryption, access control, persistence, message
+  history, private messaging, channels, or configurable server settings.
+- It implements only a newline-delimited broadcast protocol. It is not an IRC
+  implementation and does not provide IRC commands, registration, nicknames,
+  channel membership, or user management.
+- The event loop uses `select()`, so its usable descriptor range is restricted
+  by the platform's `FD_SETSIZE`. Accepted sockets whose descriptors cannot be
+  safely represented by `select()` or indexed in the server's client arrays
+  are rejected. This is a descriptor-safety limit, not a guarantee that
+  `MAX_CLIENTS` (`65536`) clients can connect.
+- The listening backlog is fixed at `10` (according to pre-give main). 
+  It is a kernel-managed pending-connection queue, so the operating system may 
+  cap its effective size. The server accepts one pending connection per 
+  event-loop pass; connection bursts may therefore remain queued temporarily 
+  or be rejected once the kernel queue is full.
+- Input is read in chunks of at most `1023` bytes. The server correctly keeps
+  incomplete lines between reads, but a client that never sends a newline can
+  make its heap-backed input buffer grow without a configured maximum.
+- Outgoing data is sent directly with `send()` on blocking sockets. Partial
+  writes, back-pressure, and `send()` errors are not handled comprehensively,
+  so a slow recipient can temporarily block the server and slow or
+  disconnected recipients can cause messages to be lost. There is no
+  per-client output queue.
+- Port arguments are validated as decimal values in the valid TCP port range
+  (`1`-`65535`); malformed values, trailing characters, and out-of-range
+  values are rejected.
+- Several network edge cases, such as nonblocking I/O, complete output-queue
+  management, and fine-grained protocol validation, are outside the
+  exercise's scope.
 - There is no automated test target in the Makefile; testing is primarily
-  manual with Netcat.
+  manual with Netcat. The debug targets provide diagnostics, but they are not
+  a substitute for a full integration or stress test suite.
 - The server accepts one port argument and runs in the foreground. It does
   not provide daemonization, configuration files, or logging.
 
 ## Use of AI
 
-AI was used to help create and organize this README, including the usage
+AI was used as assistance to create this README, including the usage
 instructions, project-purpose description, file-structure explanation, and
-limitations section. The README is intended to describe the actual contents
-and behavior of this repository; the code and the final documentation remain
-the author's responsibility.
+limitations section. Code and in-code documentation was kept untouched by AI.
