@@ -157,9 +157,24 @@ small scope:
 - Port arguments are validated as decimal values in the valid TCP port range
   (`1`-`65535`); malformed values, trailing characters, and out-of-range
   values are rejected.
-- Several network edge cases, such as nonblocking I/O, complete output-queue
-  management, and fine-grained protocol validation, are outside the
-  exercise's scope.
+- Several network edge cases are outside the exercise's scope:
+  - The sockets are blocking sockets. This means a call such as `send()` may
+    wait until the operating system can accept the data. In a larger server,
+    nonblocking sockets are often used so that one slow client cannot hold up
+    the whole event loop. Nonblocking I/O requires handling additional cases,
+    such as `EAGAIN` or `EWOULDBLOCK`, which mean that the operation should be
+    tried again later.
+  - The server does not have a complete per-client output queue. It calls
+    `send()` directly instead of storing unsent bytes and monitoring writable
+    events. A `send()` call is allowed to write fewer bytes than requested,
+    so production-style code must preserve the remaining bytes and send them
+    later. It also needs a policy for slow clients whose queues keep growing:
+    apply back-pressure, limit the queue, or disconnect the client.
+  - The chat protocol only uses newline characters to mark the end of a
+    message. It does not validate message length, message format, permitted
+    characters, commands, usernames, or other application rules. More
+    detailed protocol validation would make the server more robust, but it
+    would also add rules that are not needed for this small exercise.
 - There is no automated test target in the Makefile; testing is primarily
   manual with Netcat. The debug targets provide diagnostics, but they are not
   a substitute for a full integration or stress test suite.
